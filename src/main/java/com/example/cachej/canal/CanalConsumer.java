@@ -31,6 +31,7 @@ public class CanalConsumer {
         LOG.info("[CanalConsumer] topic:{}, partition:{},key:{},value:{}", record.topic(),
                 record.partition(), record.key(), record.value());
         String type = (String) JSONObject.parseObject(value).getString("type");
+        String table = (String) JSONObject.parseObject(value).getString("table");
         boolean isDDL = (boolean) JSONObject.parseObject(value).getBoolean("isDdl");
         JSONArray data = JSONObject.parseObject(value).getJSONArray("data");
 
@@ -40,10 +41,10 @@ public class CanalConsumer {
         if (!isDDL) {
 //            List<UserInfo> data = binLog.getData();
             //如果是新增操作，需要将数据同步到redis中，并设置过期时间100s
-            if ("INSERT".equals(type)) {
+            if ("INSERT".equals(type) && "user_info".equals(table)) {
                 for (int i = 0; i < data.size(); i++) {
                     JSONObject jsonObject = data.getJSONObject(i);
-                    redisTemplate.opsForValue().set(CacheKey.CACHE_USER_INFO + jsonObject.getInteger("id"), jsonObject.toJSONString(),
+                    redisTemplate.opsForValue().set(CacheKey.CACHE_AUTH_USER_INFO + jsonObject.getInteger("id"), jsonObject.toJSONString(),
                             100, TimeUnit.SECONDS);
                 }
 
@@ -52,14 +53,14 @@ public class CanalConsumer {
                 //如果是修改操作，需要将数据同步到redis中，并设置过期时间100s
                 for (int i = 0; i < data.size(); i++) {
                     JSONObject jsonObject = data.getJSONObject(i);
-                    redisTemplate.opsForValue().set(CacheKey.CACHE_USER_INFO + jsonObject.getInteger("id"), jsonObject.toJSONString(),
+                    redisTemplate.opsForValue().set(CacheKey.CACHE_AUTH_USER_INFO + jsonObject.getInteger("id"), jsonObject.toJSONString(),
                             100, TimeUnit.SECONDS);
                 }
             } else if ("DELETE".equals(type)) {
                 //如果是删除操作，需要把redis中的缓存数据也删除掉
                 for (int i = 0; i < data.size(); i++) {
                     JSONObject jsonObject = data.getJSONObject(i);
-                    redisTemplate.delete(CacheKey.CACHE_USER_INFO + jsonObject.getInteger("id"));
+                    redisTemplate.delete(CacheKey.CACHE_AUTH_USER_INFO + jsonObject.getInteger("id"));
                 }
             }
         }

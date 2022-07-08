@@ -91,7 +91,12 @@ public class CacheConfig {
                 .expireAfterWrite(5, TimeUnit.SECONDS)
                 .maximumSize(100)
                 .build());
+        CaffeineCache studentCache = new CaffeineCache(CacheKey.CACHE_STUDENT_KEY, Caffeine.newBuilder().recordStats()
+                .expireAfterWrite(5, TimeUnit.SECONDS)
+                .maximumSize(100)
+                .build());
         caffeineCacheList.add(userCache);
+        caffeineCacheList.add(studentCache);
         return caffeineCacheList;
     }
 

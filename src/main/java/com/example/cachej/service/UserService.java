@@ -16,4 +16,6 @@ public interface UserService {
     UserInfo updateUser(UserInfo user);
 
     List<UserInfo> getAllUsers();
+
+    UserInfo getUserByToken(String token);
 }

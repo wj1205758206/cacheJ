@@ -26,6 +26,12 @@
         from user_info where id = #{id,jdbcType=INTEGER}
     </select>
 
+    <select id="getUserByToken" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from user_info where token = #{token,jdbcType=VARCHAR}
+    </select>
+
     <insert id="addUser" parameterType="com.example.cachej.domain.UserInfo">
         insert into user_info (username, product, department, token, qps)
         values (#{username,jdbcType=VARCHAR}, #{product,jdbcType=VARCHAR}, #{department,jdbcType=VARCHAR},

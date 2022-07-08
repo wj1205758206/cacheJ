@@ -18,4 +18,6 @@ public interface UserMapper {
     void updateUser(UserInfo user);
 
     List<UserInfo> getAllUsers();
+
+    UserInfo getUserByToken(String token);
 }

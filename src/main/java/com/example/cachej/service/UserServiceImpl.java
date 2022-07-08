@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
     public UserInfo getUser(Integer id) {
         //如果一级缓存不存在，再尝试从redis二级缓存中获取user
         try {
-            String jsonStr = (String) redisTemplate.opsForValue().get(CacheKey.CACHE_USER_INFO + id);
+            String jsonStr = (String) redisTemplate.opsForValue().get(CacheKey.CACHE_AUTH_USER_INFO + id);
             UserInfo user = JSON.parseObject(jsonStr, UserInfo.class); //反序列化
             if (user != null) {
                 LOG.info("[UserService] get user from redis, id=" + id);
@@ -51,7 +51,7 @@ public class UserServiceImpl implements UserService {
                 LOG.info("[UserService] get user from mysql");
                 LOG.info("[UserService] update redis");
                 //更新redis缓存
-                redisTemplate.opsForValue().set(CacheKey.CACHE_USER_INFO + id, JSON.toJSONString(user), 10, TimeUnit.SECONDS);
+                redisTemplate.opsForValue().set(CacheKey.CACHE_AUTH_USER_INFO + id, JSON.toJSONString(user), 10, TimeUnit.SECONDS);
             }
         } catch (Exception e) {
             LOG.error("[UserService] get user from mysql exception: " + e.getMessage());
@@ -138,7 +138,7 @@ public class UserServiceImpl implements UserService {
         List<UserInfo> allUsers = null;
         //再尝试从redis中获取
         try {
-            allUsers = redisTemplate.opsForList().range(CacheKey.CACHE_USER_INFO + "allUsers", 0, -1);
+            allUsers = redisTemplate.opsForList().range(CacheKey.CACHE_AUTH_USER_INFO + "allUsers", 0, -1);
             if (CollectionUtils.isNotEmpty(allUsers)) {
                 return allUsers;
             }
@@ -146,11 +146,43 @@ public class UserServiceImpl implements UserService {
             allUsers = userMapper.getAllUsers();
             LOG.info("[UserService] get all users from mysql");
             //更新redis缓存
-            redisTemplate.opsForList().rightPushAll(CacheKey.CACHE_USER_INFO + "allUsers", allUsers);
+            redisTemplate.opsForList().rightPushAll(CacheKey.CACHE_AUTH_USER_INFO + "allUsers", allUsers);
             LOG.info("[UserService] update all users to redis");
         } catch (Exception e) {
             LOG.error("[UserService] get all users exception: " + e.getMessage());
         }
         return allUsers;
+    }
+
+    //先尝试从caffeine中获取user，开启sync是避免缓存击穿
+    @Cacheable(key = "#token", value = CacheKey.CACHE_USER_KEY, sync = true)
+    @Override
+    public UserInfo getUserByToken(String token) {
+        //如果一级缓存不存在，再尝试从redis二级缓存中获取user
+        try {
+            String jsonStr = (String) redisTemplate.opsForValue().get(CacheKey.CACHE_AUTH_USER_INFO + token);
+            UserInfo user = JSON.parseObject(jsonStr, UserInfo.class); //反序列化
+            if (user != null) {
+                LOG.info("[UserService] get user from redis, token=" + token);
+                return user;
+            }
+        } catch (Exception e) {
+            LOG.error("[UserService] get user from redis exception: " + e.getMessage());
+        }
+
+        //如果redis也没有获取到，那么就从mysql中查询
+        UserInfo user = null;
+        try {
+            user = userMapper.getUserByToken(token);
+            if (user != null) {
+                LOG.info("[UserService] get user from mysql");
+                LOG.info("[UserService] update redis");
+                //更新redis缓存
+                redisTemplate.opsForValue().set(CacheKey.CACHE_AUTH_USER_INFO + token, JSON.toJSONString(user), 10, TimeUnit.SECONDS);
+            }
+        } catch (Exception e) {
+            LOG.error("[UserService] get user from mysql exception: " + e.getMessage());
+        }
+        return user;
     }
 }

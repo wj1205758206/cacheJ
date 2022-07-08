@@ -32,3 +32,9 @@ spring:
 mybatis:
   config-location: classpath:mybatis/mybatis-config.xml
   mapper-locations: classpath:mybatis/mapper/*.xml
+
+redisson:
+  host: 192.168.144.163
+  port: 6379
+  password:
+  database:
