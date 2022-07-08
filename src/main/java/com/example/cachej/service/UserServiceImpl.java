@@ -3,7 +3,7 @@ package com.example.cachej.service;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.example.cachej.config.CacheKey;
-import com.example.cachej.domain.User;
+import com.example.cachej.domain.UserInfo;
 import com.example.cachej.mapper.UserMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
@@ -30,11 +30,11 @@ public class UserServiceImpl implements UserService {
     //先尝试从caffeine中获取user，开启sync是避免缓存击穿
     @Cacheable(key = "#id", value = CacheKey.CACHE_USER_KEY, sync = true)
     @Override
-    public User getUser(Integer id) {
+    public UserInfo getUser(Integer id) {
         //如果一级缓存不存在，再尝试从redis二级缓存中获取user
         try {
-            String jsonStr = (String) redisTemplate.opsForValue().get(String.valueOf(id));
-            User user = JSON.parseObject(jsonStr, User.class); //反序列化
+            String jsonStr = (String) redisTemplate.opsForValue().get(CacheKey.CACHE_USER_INFO + id);
+            UserInfo user = JSON.parseObject(jsonStr, UserInfo.class); //反序列化
             if (user != null) {
                 LOG.info("[UserService] get user from redis, id=" + id);
                 return user;
@@ -44,14 +44,14 @@ public class UserServiceImpl implements UserService {
         }
 
         //如果redis也没有获取到，那么就从mysql中查询
-        User user = null;
+        UserInfo user = null;
         try {
             user = userMapper.getUser(id);
             if (user != null) {
                 LOG.info("[UserService] get user from mysql");
                 LOG.info("[UserService] update redis");
                 //更新redis缓存
-                redisTemplate.opsForValue().set(user.getId().toString(), JSON.toJSONString(user), 10, TimeUnit.SECONDS);
+                redisTemplate.opsForValue().set(CacheKey.CACHE_USER_INFO + id, JSON.toJSONString(user), 10, TimeUnit.SECONDS);
             }
         } catch (Exception e) {
             LOG.error("[UserService] get user from mysql exception: " + e.getMessage());
@@ -64,11 +64,12 @@ public class UserServiceImpl implements UserService {
             put = {@CachePut(key = "#user.id", value = CacheKey.CACHE_USER_KEY)} //caffeine一级缓存
     )
     @Override
-    public User addUser(User user) {
+    public UserInfo addUser(UserInfo user) {
         //双写
         try {
             //1.写redis二级缓存
-            redisTemplate.opsForValue().set(Integer.toString(user.getId()), JSON.toJSON(user), 10, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(
+                    CacheKey.CACHE_USER_INFO + user.getId(), JSON.toJSONString(user), 10, TimeUnit.SECONDS);
         } catch (Exception e) {
             LOG.error("[UserService] write redis cache exception: " + e.getMessage());
         }
@@ -79,14 +80,14 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             LOG.error("[UserService] write mysql exception: " + e.getMessage());
         }
-
+        LOG.info("add user: " + user.toString());
         return user;
     }
 
 
     @Caching(evict = {
             @CacheEvict(key = "'getAllUsers'"),
-            @CacheEvict(key = "#user.id", value = CacheKey.CACHE_USER_KEY)} //删除caffeine缓存
+            @CacheEvict(key = "#id", value = CacheKey.CACHE_USER_KEY)} //删除caffeine缓存
     )
     @Override
     public void deleteUser(Integer id) {
@@ -95,7 +96,7 @@ public class UserServiceImpl implements UserService {
             userMapper.deleteUser(id);
             LOG.info("[UserService] delete user from mysql success");
             //删除redis
-            redisTemplate.delete(id);
+            redisTemplate.delete(CacheKey.CACHE_USER_INFO + id);
             LOG.info("[UserService] delete user from redis success");
         } catch (Exception e) {
             LOG.error("[UserService] delete user exception: " + e.getMessage());
@@ -107,8 +108,8 @@ public class UserServiceImpl implements UserService {
             @CacheEvict(key = "'getAllUsers'")
     }, put = {@CachePut(key = "#user.id", value = CacheKey.CACHE_USER_KEY)}) //update方法执行成功之后，也更新caffeine缓存
     @Override
-    public User updateUser(User user) {
-        User oldUser = null;
+    public UserInfo updateUser(UserInfo user) {
+        UserInfo oldUser = null;
         try {
             oldUser = userMapper.getUser(user.getId());
             if (oldUser == null) {
@@ -116,12 +117,14 @@ public class UserServiceImpl implements UserService {
                 return null;
             }
             oldUser.setUsername(user.getUsername());
-            oldUser.setMobile(user.getMobile());
-            oldUser.setAge(user.getAge());
+            oldUser.setProduct(user.getProduct());
+            oldUser.setDepartment(user.getDepartment());
+            oldUser.setToken(user.getToken());
+            oldUser.setQps(user.getQps());
             //更新mysql
             userMapper.updateUser(user);
             //更新redis
-            redisTemplate.opsForValue().set(Integer.toString(oldUser.getId()), JSON.toJSON(oldUser), 10, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(CacheKey.CACHE_USER_INFO + oldUser.getId(), JSON.toJSON(oldUser), 10, TimeUnit.SECONDS);
             return oldUser;
         } catch (Exception e) {
             LOG.error("[UserService] update user exception: " + e.getMessage());
@@ -131,11 +134,11 @@ public class UserServiceImpl implements UserService {
 
     @Cacheable(key = "'getAllUsers'", value = CacheKey.CACHE_USER_KEY) //先从caffeine缓存获取all users
     @Override
-    public List<User> getAllUsers() {
-        List<User> allUsers = null;
+    public List<UserInfo> getAllUsers() {
+        List<UserInfo> allUsers = null;
         //再尝试从redis中获取
         try {
-            allUsers = redisTemplate.opsForList().range("allUsers", 0, -1);
+            allUsers = redisTemplate.opsForList().range(CacheKey.CACHE_USER_INFO + "allUsers", 0, -1);
             if (CollectionUtils.isNotEmpty(allUsers)) {
                 return allUsers;
             }
@@ -143,7 +146,7 @@ public class UserServiceImpl implements UserService {
             allUsers = userMapper.getAllUsers();
             LOG.info("[UserService] get all users from mysql");
             //更新redis缓存
-            redisTemplate.opsForList().rightPushAll("allUsers", allUsers);
+            redisTemplate.opsForList().rightPushAll(CacheKey.CACHE_USER_INFO + "allUsers", allUsers);
             LOG.info("[UserService] update all users to redis");
         } catch (Exception e) {
             LOG.error("[UserService] get all users exception: " + e.getMessage());

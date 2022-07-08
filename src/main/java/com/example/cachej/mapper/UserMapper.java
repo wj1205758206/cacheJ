@@ -1,6 +1,7 @@
 package com.example.cachej.mapper;
 
-import com.example.cachej.domain.User;
+
+import com.example.cachej.domain.UserInfo;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -8,13 +9,13 @@ import java.util.List;
 @Mapper
 public interface UserMapper {
 
-    User getUser(Integer id);
+    UserInfo getUser(Integer id);
 
-    void addUser(User user);
+    void addUser(UserInfo user);
 
     void deleteUser(Integer id);
 
-    void updateUser(User user);
+    void updateUser(UserInfo user);
 
-    List<User> getAllUsers();
+    List<UserInfo> getAllUsers();
 }

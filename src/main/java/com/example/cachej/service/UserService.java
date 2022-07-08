@@ -1,18 +1,19 @@
 package com.example.cachej.service;
 
-import com.example.cachej.domain.User;
+
+import com.example.cachej.domain.UserInfo;
 
 import java.util.List;
 
 public interface UserService {
 
-    User getUser(Integer id);
+    UserInfo getUser(Integer id);
 
-    User addUser(User user);
+    UserInfo addUser(UserInfo user);
 
     void deleteUser(Integer id);
 
-    User updateUser(User user);
+    UserInfo updateUser(UserInfo user);
 
-    List<User> getAllUsers();
+    List<UserInfo> getAllUsers();
 }

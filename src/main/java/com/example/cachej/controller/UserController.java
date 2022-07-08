@@ -1,6 +1,7 @@
 package com.example.cachej.controller;
 
-import com.example.cachej.domain.User;
+
+import com.example.cachej.domain.UserInfo;
 import com.example.cachej.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -14,46 +15,56 @@ public class UserController {
     UserServiceImpl userService;
 
     @GetMapping("/addUser")
-    public String addUser(@RequestParam(value = "username") String username,
-                          @RequestParam(value = "age") int age,
-                          @RequestParam(value = "mobile") String mobile) {
+    public String addUser(@RequestParam(value = "id") int id,
+                          @RequestParam(value = "username") String username,
+                          @RequestParam(value = "product") String product,
+                          @RequestParam(value = "department") String department,
+                          @RequestParam(value = "token") String token,
+                          @RequestParam(value = "qps") String qps) {
 
-        User user = new User();
-        user.setAge(age);
+        UserInfo user = new UserInfo();
+        user.setId(id);
         user.setUsername(username);
-        user.setMobile(mobile);
+        user.setProduct(product);
+        user.setDepartment(department);
+        user.setToken(token);
+        user.setQps(qps);
         userService.addUser(user);
 
         return "add user success";
     }
 
     @GetMapping("/getUser")
-    public User getUser(@RequestParam(value = "id") int id) {
+    public UserInfo getUser(@RequestParam(value = "id") int id) {
         return userService.getUser(id);
     }
 
     @GetMapping("/getAllUsers")
-    public List<User> getAllUsers() {
+    public List<UserInfo> getAllUsers() {
         return userService.getAllUsers();
     }
 
     @GetMapping("/updateUser")
     public String updateUser(@RequestParam(value = "id") int id,
-                           @RequestParam(value = "username") String username,
-                           @RequestParam(value = "age") int age,
-                           @RequestParam(value = "mobile") String mobile) {
+                             @RequestParam(value = "username") String username,
+                             @RequestParam(value = "product") String product,
+                             @RequestParam(value = "department") String department,
+                             @RequestParam(value = "token") String token,
+                             @RequestParam(value = "qps") String qps) {
 
-        User user = new User();
+        UserInfo user = new UserInfo();
         user.setId(id);
-        user.setAge(age);
         user.setUsername(username);
-        user.setMobile(mobile);
+        user.setProduct(product);
+        user.setDepartment(department);
+        user.setToken(token);
+        user.setQps(qps);
         userService.updateUser(user);
         return "update success";
     }
 
     @GetMapping("/deleteUser")
-    public String deleteUser(@RequestParam(value = "id") int id){
+    public String deleteUser(@RequestParam(value = "id") int id) {
         userService.deleteUser(id);
         return "delete success";
     }
