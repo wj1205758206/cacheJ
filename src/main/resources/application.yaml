@@ -15,10 +15,20 @@ spring:
   cache:
     type: redis
     redis:
-      cache-null-values: true # ????null????????
-      time-to-live: 10000 # ?????? ??
+      cache-null-values: true
+      time-to-live: 10000
+  kafka:
+    bootstrap-servers: 192.168.144.163:9092
+    consumer:
+      group-id: userGroup
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      batch-size: 65536
+      buffer-memory: 524288
 
 mybatis:
   config-location: classpath:mybatis/mybatis-config.xml
   mapper-locations: classpath:mybatis/mapper/*.xml
-

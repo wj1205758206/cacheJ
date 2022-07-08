@@ -65,14 +65,14 @@ public class UserServiceImpl implements UserService {
     )
     @Override
     public UserInfo addUser(UserInfo user) {
-        //双写
-        try {
-            //1.写redis二级缓存
-            redisTemplate.opsForValue().set(
-                    CacheKey.CACHE_USER_INFO + user.getId(), JSON.toJSONString(user), 10, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            LOG.error("[UserService] write redis cache exception: " + e.getMessage());
-        }
+//        //双写
+//        try {
+//            //1.写redis二级缓存
+//            redisTemplate.opsForValue().set(
+//                    CacheKey.CACHE_USER_INFO + user.getId(), JSON.toJSONString(user), 10, TimeUnit.SECONDS);
+//        } catch (Exception e) {
+//            LOG.error("[UserService] write redis cache exception: " + e.getMessage());
+//        }
 
         try {
             //2.持久化写到mysql
@@ -95,9 +95,9 @@ public class UserServiceImpl implements UserService {
             //删除mysql
             userMapper.deleteUser(id);
             LOG.info("[UserService] delete user from mysql success");
-            //删除redis
-            redisTemplate.delete(CacheKey.CACHE_USER_INFO + id);
-            LOG.info("[UserService] delete user from redis success");
+//            //删除redis
+//            redisTemplate.delete(CacheKey.CACHE_USER_INFO + id);
+//            LOG.info("[UserService] delete user from redis success");
         } catch (Exception e) {
             LOG.error("[UserService] delete user exception: " + e.getMessage());
         }
@@ -123,8 +123,8 @@ public class UserServiceImpl implements UserService {
             oldUser.setQps(user.getQps());
             //更新mysql
             userMapper.updateUser(user);
-            //更新redis
-            redisTemplate.opsForValue().set(CacheKey.CACHE_USER_INFO + oldUser.getId(), JSON.toJSON(oldUser), 10, TimeUnit.SECONDS);
+//            //更新redis
+//            redisTemplate.opsForValue().set(CacheKey.CACHE_USER_INFO + oldUser.getId(), JSON.toJSON(oldUser), 10, TimeUnit.SECONDS);
             return oldUser;
         } catch (Exception e) {
             LOG.error("[UserService] update user exception: " + e.getMessage());
