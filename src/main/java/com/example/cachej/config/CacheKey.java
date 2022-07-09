@@ -7,4 +7,5 @@ public class CacheKey {
     public static final String CACHE_AUTH_USER_INFO = "auth_user:";
     public static final String CACHE_STUDENT_INFO = "student:";
     public static final String CACHE_REDISSON_LIMITER = "redisson_limiter:";
+    public static final String CACHE_REDISSON_LOCK = "redisson_lock:";
 }

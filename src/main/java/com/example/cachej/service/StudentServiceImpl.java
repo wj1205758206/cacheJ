@@ -4,10 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.example.cachej.config.CacheKey;
 import com.example.cachej.domain.Student;
 import com.example.cachej.mapper.StudentMapper;
-import org.redisson.api.RRateLimiter;
-import org.redisson.api.RateIntervalUnit;
-import org.redisson.api.RateType;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +32,10 @@ public class StudentServiceImpl implements StudentService {
     @Cacheable(key = "#id", value = CacheKey.CACHE_STUDENT_KEY, sync = true)
     @Override
     public Student getStudentInfo(Integer id) {
+        RLock lock = redissonClient.getLock(CacheKey.CACHE_REDISSON_LOCK);
+
+        lock.lock();
+        LOG.info("[StudentService] lock, current thread: " + Thread.currentThread().getName());
         //如果一级缓存不存在，再尝试从redis二级缓存中获取student
         try {
             String jsonStr = (String) redisTemplate.opsForValue().get(CacheKey.CACHE_STUDENT_INFO + id);
@@ -59,6 +60,9 @@ public class StudentServiceImpl implements StudentService {
             }
         } catch (Exception e) {
             LOG.error("[StudentService] get student from mysql exception: " + e.getMessage());
+        } finally {
+            lock.unlock();
+            LOG.info("[StudentService] unlock, current thread: " + Thread.currentThread().getName());
         }
         return student;
     }
