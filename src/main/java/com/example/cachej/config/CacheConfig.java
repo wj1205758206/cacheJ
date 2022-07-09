@@ -88,8 +88,12 @@ public class CacheConfig {
     private List<CaffeineCache> initCaffeineCache() {
         List<CaffeineCache> caffeineCacheList = new ArrayList<>();
         CaffeineCache userCache = new CaffeineCache(CacheKey.CACHE_USER_KEY, Caffeine.newBuilder().recordStats()
-                .expireAfterWrite(5, TimeUnit.SECONDS)
-                .maximumSize(100)
+                .expireAfterWrite(5, TimeUnit.SECONDS) //写入间隔5s淘汰
+                .refreshAfterWrite(10, TimeUnit.SECONDS) // 写入后间隔10s刷新，该刷新是基于访问被动触发的，支持异步刷新和同步刷新，如果和 expireAfterWrite 组合使用，能够保证即使该缓存访问不到、也能在固定时间间隔后被淘汰，否则如果单独使用容易造成OOM
+                .maximumSize(100) //缓存 key 的最大个数
+                .weakKeys() //key设置为弱引用，在 GC 时可以直接淘汰；
+                .weakValues() //value设置为弱引用，在 GC 时可以直接淘汰；
+//                .softValues() //value设置为软引用，在内存溢出前可以直接淘汰
                 .build());
         CaffeineCache studentCache = new CaffeineCache(CacheKey.CACHE_STUDENT_KEY, Caffeine.newBuilder().recordStats()
                 .expireAfterWrite(5, TimeUnit.SECONDS)
